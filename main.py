@@ -26,7 +26,7 @@ class SearchModel(BaseModel):
 async def popular_movies():
     movie = Movie()
     popular = movie.popular()
-    return json.dumps(dict(popular))
+    return json.dumps(dict(popular.items()))
 
 
 @app.get("/discover-movies")
