@@ -15,8 +15,6 @@ tmdb = TMDb()
 tmdb.api_key = config('TMDB_API')
 ngrok.set_auth_token(config('NGROK_TOKEN'))
 print(ngrok.connect('8000').public_url)
-movie = Movie()
-search = Search()
 
 
 class SearchModel(BaseModel):
@@ -25,26 +23,32 @@ class SearchModel(BaseModel):
 
 @app.get("/popular-movies")
 async def popular_movies():
+    movie = Movie()
     popular = movie.popular()
+    print(popular)
     return popular
 
 
-@app.get("/discover-movies")
+@app.post("/discover-movies")
 async def discover_movies():
+    movie = Movie()
     top_rated = movie.top_rated()
+    print(top_rated)
     return top_rated
 
 
-@app.get("/search-movies")
+@app.post("/search-movies")
 async def search_endpoint(data: SearchModel):
     search_term = data.q
+    search = Search()
     search_results = search.movies(search_term)
     return search_results
 
 
-@app.get("/details")
+@app.post("/details")
 async def details_endpoint(data: SearchModel):
     tmdb_id = data.q
+    movie = Movie()
     details = movie.details(tmdb_id)
 
     ezflix = Ezflix(query='Goodfellas', media_type='movie', quality='720p', limit=1)
