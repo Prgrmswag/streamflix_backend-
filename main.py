@@ -26,14 +26,14 @@ class SearchModel(BaseModel):
 async def popular_movies():
     movie = Movie()
     popular = movie.popular()
-    return json.dumps(popular)
+    return json.dumps(dict(popular))
 
 
 @app.get("/discover-movies")
 async def discover_movies():
     movie = Movie()
     top_rated = movie.top_rated()
-    return json.dumps(top_rated)
+    return json.dumps(dict(top_rated))
 
 
 @app.post("/search-movies")
@@ -41,7 +41,7 @@ async def search_endpoint(data: SearchModel):
     search_term = data.q
     search = Search()
     search_results = search.movies(search_term)
-    return json.dumps(search_results)
+    return json.dumps(dict(search_results))
 
 
 @app.post("/details")
@@ -53,7 +53,7 @@ async def details_endpoint(data: SearchModel):
     ezflix = Ezflix(query='Goodfellas', media_type='movie', quality='720p', limit=1)
     movies = ezflix.search()
     details['link'] = movies[0]['link']
-    return json.dumps(details)
+    return json.dumps(dict(details))
 
 
 @app.get("/download")
