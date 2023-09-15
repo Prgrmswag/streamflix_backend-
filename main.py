@@ -28,7 +28,7 @@ async def popular_movies():
     return dict(popular)
 
 
-@app.post("/discover-movies")
+@app.get("/discover-movies")
 async def discover_movies():
     movie = Movie()
     top_rated = movie.top_rated()
