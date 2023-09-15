@@ -25,7 +25,9 @@ class SearchModel(BaseModel):
 async def popular_movies():
     movie = Movie()
     popular = movie.popular()
-    return dict(popular)
+    res = dict(popular)
+    print(res)
+    return res
 
 
 @app.get("/discover-movies")
