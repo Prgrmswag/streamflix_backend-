@@ -6,3 +6,4 @@ tmdbv3api~=1.9.0
 ezflix~=1.6.5
 torrentp
 pyngrok~=6.1.0
+python-decouple
