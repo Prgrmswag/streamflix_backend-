@@ -1,5 +1,5 @@
 import os
-
+from pyngrok import ngrok
 import requests
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -13,6 +13,8 @@ import uvicorn
 app = FastAPI()
 tmdb = TMDb()
 tmdb.api_key = config('TMDB_API')
+ngrok.set_auth_token(config('NGROK_TOKEN'))
+print(ngrok.connect('8000').public_url)
 movie = Movie()
 search = Search()
 

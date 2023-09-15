@@ -5,3 +5,4 @@ pydantic~=2.3.0
 tmdbv3api~=1.9.0
 ezflix~=1.6.5
 torrentp
+pyngrok~=6.1.0
