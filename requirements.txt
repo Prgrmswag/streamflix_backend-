@@ -1,0 +1,7 @@
+requests~=2.31.0
+uvicorn~=0.23.2
+fastapi~=0.103.1
+pydantic~=2.3.0
+tmdbv3api~=1.9.0
+ezflix~=1.6.5
+torrentp
