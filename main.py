@@ -26,8 +26,11 @@ async def popular_movies():
     movie = Movie()
     popular = movie.popular()
     res = dict(popular)
-    print(res)
-    return {"response": [res['results'][0]]}
+    results = []
+    index = 8 if len(res['results']) > 8 else len(res['results'])
+    for i in range(index):
+        results.append(res['results'][i])
+    return {"response": results}
 
 
 @app.get("/discover-movies")
