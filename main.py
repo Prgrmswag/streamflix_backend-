@@ -1,3 +1,4 @@
+import json
 import os
 from pyngrok import ngrok
 import requests
@@ -25,14 +26,14 @@ class SearchModel(BaseModel):
 async def popular_movies():
     movie = Movie()
     popular = movie.popular()
-    return str(popular)
+    return json.dumps(popular)
 
 
 @app.get("/discover-movies")
 async def discover_movies():
     movie = Movie()
     top_rated = movie.top_rated()
-    return str(top_rated)
+    return json.dumps(top_rated)
 
 
 @app.post("/search-movies")
@@ -40,7 +41,7 @@ async def search_endpoint(data: SearchModel):
     search_term = data.q
     search = Search()
     search_results = search.movies(search_term)
-    return str(search_results)
+    return json.dumps(search_results)
 
 
 @app.post("/details")
@@ -52,7 +53,7 @@ async def details_endpoint(data: SearchModel):
     ezflix = Ezflix(query='Goodfellas', media_type='movie', quality='720p', limit=1)
     movies = ezflix.search()
     details['link'] = movies[0]['link']
-    return str(details)
+    return json.dumps(details)
 
 
 @app.get("/download")
@@ -64,7 +65,7 @@ async def details_endpoint(data: SearchModel):
     os.mkdir('download-contents')
     torrent_file = TorrentDownloader("download.torrent", './download-contents/')
     torrent_file.start_download()
-    return {"status": True}
+    return json.dumps({"status": True})
 
 
 if __name__ == "__main__":
