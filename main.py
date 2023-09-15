@@ -27,8 +27,7 @@ async def popular_movies():
     popular = movie.popular()
     res = dict(popular)
     print(res)
-    res['results'] = [1,2,3]
-    return res
+    return {"response": res['results']}
 
 
 @app.get("/discover-movies")
