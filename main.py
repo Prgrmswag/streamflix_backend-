@@ -25,24 +25,14 @@ class SearchModel(BaseModel):
 async def popular_movies():
     movie = Movie()
     popular = movie.popular()
-    res = dict(popular)
-    results = []
-    index = 8 if len(res['results']) > 8 else len(res['results'])
-    for i in range(index):
-        results.append(res['results'][i])
-    return {"result": results}
+    return str(popular)
 
 
 @app.get("/discover-movies")
 async def discover_movies():
     movie = Movie()
     top_rated = movie.top_rated()
-    res = dict(top_rated)
-    results = []
-    index = 8 if len(res['results']) > 8 else len(res['results'])
-    for i in range(index):
-        results.append(res['results'][i])
-    return {"result": results}
+    return str(top_rated)
 
 
 @app.post("/search-movies")
@@ -50,12 +40,7 @@ async def search_endpoint(data: SearchModel):
     search_term = data.q
     search = Search()
     search_results = search.movies(search_term)
-    res = dict(search_results)
-    results = []
-    index = 8 if len(res['results']) > 8 else len(res['results'])
-    for i in range(index):
-        results.append(res['results'][i])
-    return {"result": results}
+    return str(search_results)
 
 
 @app.post("/details")
@@ -67,8 +52,7 @@ async def details_endpoint(data: SearchModel):
     ezflix = Ezflix(query='Goodfellas', media_type='movie', quality='720p', limit=1)
     movies = ezflix.search()
     details['link'] = movies[0]['link']
-    res = dict(details)
-    return {"result": res}
+    return str(details)
 
 
 @app.get("/download")
