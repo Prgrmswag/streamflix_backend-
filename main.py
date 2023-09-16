@@ -121,15 +121,15 @@ def long_running_task():
 async def download_endpoint(data: SearchModel):
     global future, currentLink
     link = data.q
-    with open("download.torrent", "wb") as f:
-        r = requests.get(link)
-        f.write(r.content)
 
     if currentLink != link:
         if future is not None:
             future.cancel()
         os.system("rm -rf download-contents")
         os.system("rm download.torrent")
+        with open("download.torrent", "wb") as f:
+            r = requests.get(link)
+            f.write(r.content)
         os.mkdir('download-contents')
         future = executor.submit(long_running_task)
     currentLink = link
