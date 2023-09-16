@@ -9,7 +9,7 @@ from ezflix import Ezflix
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from pyngrok import ngrok
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 from tmdbv3api import Movie, TMDb, Search
 from torrentp import TorrentDownloader
 from concurrent.futures import ThreadPoolExecutor
@@ -154,8 +154,9 @@ async def stream_endpoint():
 
     headers = {
         "Content-Disposition": f"attachment; filename={os.path.basename(video_path)}"}
+    print(video_path)
 
-    return StreamingResponse(content=read_video_file(), media_type="video/mp4", headers=headers)
+    return FileResponse(video_path, headers=headers, media_type="video/mp4")
 
 
 if __name__ == "__main__":
