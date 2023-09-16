@@ -24,7 +24,7 @@ class SearchModel(BaseModel):
 
 
 @dataclass
-class Movie:
+class MovieModel:
     id: int
     title: str
     description: str
@@ -37,7 +37,7 @@ class Movie:
 
     @staticmethod
     def from_json(json_map):
-        return Movie(
+        return MovieModel(
             id=json_map['id'],
             title=json_map['original_title'],
             description=json_map['overview'],
@@ -57,7 +57,7 @@ async def popular_movies():
     results = popular.get('results')
     movies = []
     for res in results:
-        movies.append(Movie.from_json(res))
+        movies.append(MovieModel.from_json(res))
     return {"data": movies}
 
 
@@ -68,7 +68,7 @@ async def discover_movies():
     results = top_rated.get('results')
     movies = []
     for res in results:
-        movies.append(Movie.from_json(res))
+        movies.append(MovieModel.from_json(res))
     return {"data": movies}
 
 
@@ -80,7 +80,7 @@ async def search_endpoint(data: SearchModel):
     results = search_results.get('results')
     movies = []
     for res in results:
-        movies.append(Movie.from_json(res))
+        movies.append(MovieModel.from_json(res))
     return {"data": movies}
 
 
