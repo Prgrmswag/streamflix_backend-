@@ -1,6 +1,5 @@
 import json
 import os
-import time
 from dataclasses import dataclass
 
 import requests
@@ -10,7 +9,7 @@ from ezflix import Ezflix
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from pyngrok import ngrok
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse
 from tmdbv3api import Movie, TMDb, Search
 from torrentp import TorrentDownloader
 from concurrent.futures import ThreadPoolExecutor
@@ -164,7 +163,15 @@ async def stream_endpoint():
         "Content-Disposition": f"attachment; filename={os.path.basename(video_path)}"}
     print(video_path)
 
-    return FileResponse(video_path, headers=headers, media_type="video/mp4")
+    def read_video_file():
+        with open(video_path, mode="rb") as video_file:
+            while True:
+                chunk = video_file.read(1024)  # You can adjust the chunk size as needed
+                if not chunk:
+                    break
+                yield chunk
+
+    return StreamingResponse(read_video_file(), headers=headers, media_type="video/mp4")
 
 
 if __name__ == "__main__":
