@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from dataclasses import dataclass
 
 import requests
@@ -17,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 executor = ThreadPoolExecutor()
 future = None
 currentLink = None
+torrent_file = None
 app = FastAPI()
 tmdb = TMDb()
 tmdb.api_key = config('TMDB_API')
@@ -113,6 +115,7 @@ async def details_endpoint(data: DetailModel):
 
 
 def long_running_task():
+    global torrent_file
     torrent_file = TorrentDownloader("download.torrent", base_directory)
     torrent_file.start_download()
 
@@ -132,6 +135,13 @@ async def download_endpoint(data: SearchModel):
             f.write(r.content)
         os.mkdir('download-contents')
         future = executor.submit(long_running_task)
+        time.sleep(1)
+        while True:
+            print(torrent_file)
+            status = torrent_file._downloader.status()
+            print(status.progress)
+            if status.progress > 1.5:
+                break
     currentLink = link
 
     return json.dumps({"status": True})
