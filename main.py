@@ -125,7 +125,7 @@ async def download_endpoint(data: SearchModel):
         r = requests.get(link)
         f.write(r.content)
 
-    if future is not None and currentLink != link:
+    if currentLink != link:
         future.cancel()
         os.system("rm -rf download-contents")
         os.system("rm download.torrent")
