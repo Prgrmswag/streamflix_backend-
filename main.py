@@ -129,8 +129,7 @@ async def download_endpoint(data: SearchModel):
         future.cancel()
         os.system("rm -rf download-contents")
         os.system("rm download.torrent")
-
-    os.mkdir('download-contents')
+        os.mkdir('download-contents')
     currentLink = link
 
     future = executor.submit(long_running_task)
