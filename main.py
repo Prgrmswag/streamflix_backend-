@@ -1,15 +1,16 @@
 import json
 import os
-from pyngrok import ngrok
+from dataclasses import dataclass
+
 import requests
+import uvicorn
+from decouple import config
+from ezflix import Ezflix
 from fastapi import FastAPI
 from pydantic import BaseModel
+from pyngrok import ngrok
 from tmdbv3api import Movie, TMDb, Search
-from ezflix import Ezflix
 from torrentp import TorrentDownloader
-from decouple import config
-
-import uvicorn
 
 app = FastAPI()
 tmdb = TMDb()
@@ -22,18 +23,53 @@ class SearchModel(BaseModel):
     q: str
 
 
+@dataclass
+class Movie:
+    id: int
+    title: str
+    description: str
+    date: str
+    popularity: float
+    vote: float
+    voteCount: int
+    posterImage: str
+    wallpaperImage: str
+
+    @staticmethod
+    def from_json(json_map):
+        return Movie(
+            id=json_map['id'],
+            title=json_map['original_title'],
+            description=json_map['overview'],
+            date=json_map['release_date'],
+            popularity=json_map['popularity'],
+            vote=json_map['vote_average'],
+            voteCount=json_map['vote_count'],
+            posterImage=json_map['poster_path'],
+            wallpaperImage=json_map['backdrop_path'],
+        )
+
+
 @app.get("/popular-movies")
 async def popular_movies():
     movie = Movie()
     popular = movie.popular()
-    return json.dumps(dict(popular.items()))
+    results = popular.get('results')
+    movies = []
+    for res in results:
+        movies.append(Movie.from_json(res))
+    return {"data": movies}
 
 
 @app.get("/discover-movies")
 async def discover_movies():
     movie = Movie()
     top_rated = movie.top_rated()
-    return json.dumps(dict(top_rated))
+    results = top_rated.get('results')
+    movies = []
+    for res in results:
+        movies.append(Movie.from_json(res))
+    return {"data": movies}
 
 
 @app.post("/search-movies")
@@ -41,7 +77,11 @@ async def search_endpoint(data: SearchModel):
     search_term = data.q
     search = Search()
     search_results = search.movies(search_term)
-    return json.dumps(dict(search_results))
+    results = search_results.get('results')
+    movies = []
+    for res in results:
+        movies.append(Movie.from_json(res))
+    return {"data": movies}
 
 
 @app.post("/details")
