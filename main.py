@@ -6,9 +6,10 @@ import requests
 import uvicorn
 from decouple import config
 from ezflix import Ezflix
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from pyngrok import ngrok
+from fastapi.responses import StreamingResponse
 from tmdbv3api import Movie, TMDb, Search
 from torrentp import TorrentDownloader
 
@@ -17,6 +18,8 @@ tmdb = TMDb()
 tmdb.api_key = config('TMDB_API')
 ngrok.set_auth_token(config('NGROK_TOKEN'))
 print(ngrok.connect('8000').public_url)
+video_extensions = ['.mp4', '.avi', '.mkv', '.mov', '.wmv']
+base_directory = 'download-contents/'
 
 
 class SearchModel(BaseModel):
@@ -105,16 +108,46 @@ async def details_endpoint(data: DetailModel):
     return MovieDetailModel(tmdb_id, movies[0]['link'])
 
 
-@app.get("/download")
-async def details_endpoint(data: SearchModel):
+@app.post("/download")
+async def download_endpoint(data: SearchModel):
     link = data.q
     with open("download.torrent", "wb") as f:
         r = requests.get(link)
         f.write(r.content)
     os.mkdir('download-contents')
-    torrent_file = TorrentDownloader("download.torrent", './download-contents/')
+    torrent_file = TorrentDownloader("download.torrent", base_directory)
     torrent_file.start_download()
     return json.dumps({"status": True})
+
+
+@app.get("/stream")
+async def stream_endpoint():
+    def find_video_files(directory):
+        video_files = []
+        for root, _, files in os.walk(directory):
+            for file in files:
+                if any(file.endswith(ext) for ext in video_extensions):
+                    video_files.append(os.path.join(root, file))
+        return video_files
+
+    def read_video_file():
+        with open(video_path, mode="rb") as video_file:
+            while True:
+                chunk = video_file.read(1024)  # You can adjust the chunk size as needed
+                if not chunk:
+                    break
+                yield chunk
+
+    fs = find_video_files(base_directory)
+    if len(fs) > 0:
+        video_path = fs[0]
+    else:
+        raise HTTPException(status_code=400)
+
+    headers = {
+        "Content-Disposition": f"attachment; filename={os.path.basename(video_path)}"}
+
+    return StreamingResponse(content=read_video_file(), media_type="video/mp4", headers=headers)
 
 
 if __name__ == "__main__":
