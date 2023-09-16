@@ -12,7 +12,9 @@ from pyngrok import ngrok
 from fastapi.responses import StreamingResponse
 from tmdbv3api import Movie, TMDb, Search
 from torrentp import TorrentDownloader
+from concurrent.futures import ThreadPoolExecutor
 
+executor = ThreadPoolExecutor()
 app = FastAPI()
 tmdb = TMDb()
 tmdb.api_key = config('TMDB_API')
@@ -108,6 +110,11 @@ async def details_endpoint(data: DetailModel):
     return MovieDetailModel(tmdb_id, movies[0]['link'])
 
 
+def long_running_task():
+    torrent_file = TorrentDownloader("download.torrent", base_directory)
+    torrent_file.start_download()
+
+
 @app.post("/download")
 async def download_endpoint(data: SearchModel):
     link = data.q
@@ -115,8 +122,9 @@ async def download_endpoint(data: SearchModel):
         r = requests.get(link)
         f.write(r.content)
     os.mkdir('download-contents')
-    torrent_file = TorrentDownloader("download.torrent", base_directory)
-    torrent_file.start_download()
+
+    executor.submit(long_running_task)
+
     return json.dumps({"status": True})
 
 
