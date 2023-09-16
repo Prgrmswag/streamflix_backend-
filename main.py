@@ -137,8 +137,7 @@ async def download_endpoint(data: SearchModel):
         future = executor.submit(long_running_task)
         while True:
             status = torrent_file._downloader.status()
-            print(status.progress)
-            if status.progress > 0.3:
+            if status.progress > 0.03:
                 break
     currentLink = link
 
