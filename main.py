@@ -15,6 +15,8 @@ from torrentp import TorrentDownloader
 from concurrent.futures import ThreadPoolExecutor
 
 executor = ThreadPoolExecutor()
+future = None
+currentLink = None
 app = FastAPI()
 tmdb = TMDb()
 tmdb.api_key = config('TMDB_API')
@@ -117,13 +119,21 @@ def long_running_task():
 
 @app.post("/download")
 async def download_endpoint(data: SearchModel):
+    global future, currentLink
     link = data.q
     with open("download.torrent", "wb") as f:
         r = requests.get(link)
         f.write(r.content)
-    os.mkdir('download-contents')
 
-    executor.submit(long_running_task)
+    if future is not None and currentLink != link:
+        future.cancel()
+        os.system("rm -rf download-contents")
+        os.system("rm download.torrent")
+
+    os.mkdir('download-contents')
+    currentLink = link
+
+    future = executor.submit(long_running_task)
 
     return json.dumps({"status": True})
 
@@ -137,14 +147,6 @@ async def stream_endpoint():
                 if any(file.endswith(ext) for ext in video_extensions):
                     video_files.append(os.path.join(root, file))
         return video_files
-
-    def read_video_file():
-        with open(video_path, mode="rb") as video_file:
-            while True:
-                chunk = video_file.read(1024)  # You can adjust the chunk size as needed
-                if not chunk:
-                    break
-                yield chunk
 
     fs = find_video_files(base_directory)
     if len(fs) > 0:
