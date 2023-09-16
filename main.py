@@ -23,6 +23,10 @@ class SearchModel(BaseModel):
     q: str
 
 
+class DetailModel(BaseModel):
+    id: int
+
+
 @dataclass
 class MovieModel:
     id: int
@@ -48,6 +52,12 @@ class MovieModel:
             posterImage=json_map['poster_path'],
             wallpaperImage=json_map['backdrop_path'],
         )
+
+
+@dataclass
+class MovieDetailModel:
+    id: int
+    link: str
 
 
 @app.get("/popular-movies")
@@ -85,15 +95,14 @@ async def search_endpoint(data: SearchModel):
 
 
 @app.post("/details")
-async def details_endpoint(data: SearchModel):
-    tmdb_id = data.q
+async def details_endpoint(data: DetailModel):
+    tmdb_id = data.id
     movie = Movie()
     details = movie.details(tmdb_id)
 
-    ezflix = Ezflix(query='Goodfellas', media_type='movie', quality='720p', limit=1)
+    ezflix = Ezflix(query=details['title'], media_type='movie', quality='720p', limit=1)
     movies = ezflix.search()
-    details['link'] = movies[0]['link']
-    return json.dumps(dict(details))
+    return MovieDetailModel(tmdb_id, movies[0]['link'])
 
 
 @app.get("/download")
