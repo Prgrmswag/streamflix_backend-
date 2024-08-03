@@ -1,5 +1,8 @@
+# swaraj 
+
 import json
 import os
+import time
 from dataclasses import dataclass
 
 import requests
@@ -68,102 +71,107 @@ class MovieDetailModel:
     link: str
 
 
-@app.get("/popular-movies")
-async def popular_movies():
-    movie = Movie()
-    popular = movie.popular()
-    results = popular.get('results')
-    movies = []
-    for res in results:
-        movies.append(MovieModel.from_json(res))
-    return {"data": movies}
-
-
-@app.get("/discover-movies")
-async def discover_movies():
-    movie = Movie()
-    top_rated = movie.top_rated()
-    results = top_rated.get('results')
-    movies = []
-    for res in results:
-        movies.append(MovieModel.from_json(res))
-    return {"data": movies}
-
-
-@app.post("/search-movies")
-async def search_endpoint(data: SearchModel):
-    search_term = data.q
-    search = Search()
-    search_results = search.movies(search_term)
-    results = search_results.get('results')
-    movies = []
-    for res in results:
-        movies.append(MovieModel.from_json(res))
-    return {"data": movies}
-
-
 @app.post("/details")
 async def details_endpoint(data: DetailModel):
-    tmdb_id = data.id
-    movie = Movie()
-    details = movie.details(tmdb_id)
+    try:
+        tmdb_id = data.id
+        movie = Movie()
+        details = movie.details(tmdb_id)
 
-    ezflix = Ezflix(query=details['title'], media_type='movie', quality='720p', limit=1)
-    movies = ezflix.search()
-    return MovieDetailModel(tmdb_id, movies[0]['link'])
+        ezflix = Ezflix(query=details['title'], media_type='movie', quality='720p', limit=1)
+        movies = ezflix.search()
+        if movies:
+            return MovieDetailModel(tmdb_id, movies[0]['link'])
+        else:
+            raise HTTPException(status_code=404, detail="No torrent found for this movie")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 def long_running_task():
     global torrent_file
-    torrent_file = TorrentDownloader("download.torrent", base_directory)
-    torrent_file.start_download()
+    try:
+        print("Starting long running task for torrent download.")
+        torrent_file = TorrentDownloader("download.torrent", base_directory)
+        torrent_file.start_download()
+    except Exception as e:
+        print(f"Error in long_running_task: {e}")
+        raise
 
 
 @app.post("/download")
 async def download_endpoint(data: SearchModel):
-    global future, currentLink
-    link = data.q
+    global future, currentLink, torrent_file
+    try:
+        link = data.q
 
-    if currentLink != link:
-        if future is not None:
-            future.cancel()
-        os.system("rm -rf download-contents")
-        os.system("rm download.torrent")
-        with open("download.torrent", "wb") as f:
-            r = requests.get(link)
-            f.write(r.content)
-        os.mkdir('download-contents')
-        future = executor.submit(long_running_task)
-        while True:
-            status = torrent_file._downloader.status()
-            if status.progress >= 1:
-                break
-    currentLink = link
+        if currentLink != link:
+            if future is not None:
+                print("Cancelling previous download task.")
+                future.cancel()
 
-    return json.dumps({"status": True})
+            # Ensure old content is removed
+            if os.path.exists("download-contents"):
+                print("Removing old download-contents directory.")
+                os.system("rm -rf download-contents")
+            if os.path.exists("download.torrent"):
+                print("Removing old download.torrent file.")
+                os.remove("download.torrent")
+
+            # Download the new torrent file
+            print(f"Downloading torrent file from link: {link}")
+            with open("download.torrent", "wb") as f:
+                r = requests.get(link)
+                f.write(r.content)
+
+            # Prepare the directory for downloads
+            print("Creating new download-contents directory.")
+            os.mkdir('download-contents')
+
+            # Start the download task
+            future = executor.submit(long_running_task)
+
+            # Wait for download to finish
+            while True:
+                if torrent_file is None:
+                    raise HTTPException(status_code=500, detail="TorrentDownloader not initialized")
+                status = torrent_file._downloader.status()
+                print(f"Download status: {status.progress}")
+                if status.progress >= 1:
+                    print("Download complete.")
+                    break
+                time.sleep(5)  # Pause briefly to reduce load
+
+        currentLink = link
+        return json.dumps({"status": True})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/stream")
 async def stream_endpoint():
-    def find_video_files(directory):
-        video_files = []
-        for root, _, files in os.walk(directory):
-            for file in files:
-                if any(file.endswith(ext) for ext in video_extensions):
-                    video_files.append(os.path.join(root, file))
-        return video_files
+    try:
+        def find_video_files(directory):
+            video_files = []
+            for root, _, files in os.walk(directory):
+                for file in files:
+                    if any(file.endswith(ext) for ext in video_extensions):
+                        video_files.append(os.path.join(root, file))
+            return video_files
 
-    fs = find_video_files(base_directory)
-    if len(fs) > 0:
-        video_path = fs[0]
-    else:
-        raise HTTPException(status_code=400)
+        fs = find_video_files(base_directory)
+        if len(fs) > 0:
+            video_path = fs[0]
+        else:
+            raise HTTPException(status_code=400, detail="No video files found")
 
-    headers = {
-        "Content-Disposition": f"attachment; filename={os.path.basename(video_path)}"}
-    print(video_path)
+        headers = {
+            "Content-Disposition": f"attachment; filename={os.path.basename(video_path)}"}
+        print(f"Streaming video: {video_path}")
 
-    return FileResponse(video_path, headers=headers, media_type="video/mp4")
+        return FileResponse(video_path, headers=headers, media_type="video/mp4")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
